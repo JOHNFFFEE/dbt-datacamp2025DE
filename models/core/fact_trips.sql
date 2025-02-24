@@ -34,6 +34,10 @@ select trips_unioned.tripid,
     dropoff_zone.borough as dropoff_borough, 
     dropoff_zone.zone as dropoff_zone,  
     trips_unioned.pickup_datetime, 
+    EXTRACT ( month from trips_unioned.pickup_datetime) as pickup_month,    
+    EXTRACT (quarter from trips_unioned.pickup_datetime) as pickup_quarter,
+    EXTRACT (year from trips_unioned.pickup_datetime) as pickup_year,
+    CONCAT(EXTRACT(YEAR FROM trips_unioned.pickup_datetime), '/Q', EXTRACT(QUARTER FROM trips_unioned.pickup_datetime)) as pickup_year_quarter,   
     trips_unioned.dropoff_datetime, 
     trips_unioned.store_and_fwd_flag, 
     trips_unioned.passenger_count, 
@@ -54,3 +58,4 @@ inner join dim_zones as pickup_zone
 on trips_unioned.pickup_locationid = pickup_zone.locationid
 inner join dim_zones as dropoff_zone
 on trips_unioned.dropoff_locationid = dropoff_zone.locationid
+where  EXTRACT (year from trips_unioned.pickup_datetime)  in (2019,2020)

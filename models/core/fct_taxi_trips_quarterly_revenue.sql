@@ -33,5 +33,5 @@ yoy_growth AS (
   --  where q1.pickup_year in (2019,2020)
 )
 
-SELECT * FROM yoy_growth ;
+SELECT * FROM yoy_growth
 

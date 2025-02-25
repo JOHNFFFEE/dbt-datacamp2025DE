@@ -7,7 +7,7 @@
 with fhv2019 as 
 (
   select *,
-  from {{ source('staging','FHV2019') }}
+  from {{ source('staging','fhv') }}
   where dispatching_base_num is not null
 )
 

@@ -1,32 +1,37 @@
-{{ config(materialized='table') }}
+{{ config(materialized="table") }}
 
-WITH filtered_trips AS (
-    SELECT 
-        service_type, 
-        fare_amount,
-        pickup_year, 
-        pickup_month
-    FROM {{ ref('fact_trips') }}
-    WHERE pickup_year = 2020
-    and pickup_month = 4
-    and (  fare_amount > 0   
-         or trip_distance > 0
-         or payment_type_description IN ('Cash', 'Credit Card')
-)),
+with
+    filtered_trips as (
+        select
+            service_type,
+            fare_amount,
+            trip_distance,  -- Make sure to include trip_distance to check the filtering condition
+            pickup_year,
+            pickup_month,
+            payment_type_description
+        from {{ ref("fact_trips") }}
+        where
+            fare_amount > 0
+            and trip_distance > 0  -- Include records where trip_distance is missing
+            and payment_type_description in ('Cash', 'Credit Card')
+    ),
 
-percentiles AS (
-SELECT
-    service_type,
-    pickup_year,
-    pickup_month,
-    PERCENTILE_CONT(fare_amount, 0.90) OVER( partition by service_type, pickup_year, pickup_month)  AS p90,
-    PERCENTILE_CONT(fare_amount, 0.95)  OVER( partition by service_type, pickup_year, pickup_month) AS p95,
-    PERCENTILE_CONT(fare_amount, 0.97)  OVER( partition by service_type, pickup_year, pickup_month) AS p97 
-FROM filtered_trips
+    percentiles as (
+        select
+            service_type,
+            percentile_cont(fare_amount, 0.97) over (
+                partition by service_type, pickup_year, pickup_month
+            ) as p97,
+            percentile_cont(fare_amount, 0.95) over (
+                partition by service_type, pickup_year, pickup_month
+            ) as p95,
+            percentile_cont(fare_amount, 0.90) over (
+                partition by service_type, pickup_year, pickup_month
+            ) as p90
+        from filtered_trips
+        where pickup_year = 2020 and pickup_month = 4
+    )
 
-)
-
-SELECT * 
-FROM percentiles
-GROUP BY service_type, pickup_year, pickup_month,p90,p95,p97
-ORDER BY service_type;
+select distinct service_type, p97, p95, p90
+from percentiles
+order by service_type
